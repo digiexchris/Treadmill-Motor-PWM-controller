@@ -12,91 +12,41 @@
 
 class SpindleSpeed {
 private:
-  static SpindleSpeed *instance;
   const struct device *qdecDev;
   const struct device *eepromDev;
+  const struct device *buttonDev;
   int myCount = 0;
   float myRatio = 0.0f;
-
   enum class Mode {
     IDLE,
     RUNNING,
     RATIO,
   } myMode;
 
-  static void qdec_event_handler(const struct device *aDev,
-                                 const struct sensor_trigger *aTrigger) {
-    if (instance) {
-      instance->HandleRotationEvent(aDev);
-    }
-  }
+  struct gpio_callback buttonCbData;
 
-  void HandleRotationEvent(const struct device *aDev) {
-    struct sensor_value val;
-    if (sensor_channel_get(aDev, SENSOR_CHAN_ROTATION, &val) == 0) {
-      myCount += val.val1; // Increment or decrement based on the rotation
+  int64_t buttonPressTime = 0;
+  Mode lastMode = Mode::IDLE;
 
-      LOG_MODULE_DECLARE(SpindleSpeed);
-      LOG_INF("Current rotation count: %d", myCount);
-    }
-  }
+  static void qdecEventHandler(const struct device *dev,
+                               const struct sensor_trigger *trigger);
+  static void buttonEventHandler(const struct device *dev,
+                                 struct gpio_callback *cb, uint32_t pins);
+  void handleRotationEvent(const struct device *dev);
+  void handleButtonPress();
+  void handleButtonRelease();
+  void saveCount();
+  void loadCount();
+  void saveRatio();
+  void loadRatio();
 
-  void HandleButtonEvent(const struct device *aDev) {
-    // struct sensor_value val;
-    // if (sensor_channel_get(aDev, SENSOR_CHAN_ROTATION, &val) == 0) {
-    //     myCount += val.val1;  // Increment or decrement based on the
-    //     rotation LOG_INF("Current rotation count: %d", myCount);
-    // }
-  }
-
-  void SaveCount() {
-    if (eeprom_write(eepromDev, 0, &myCount, sizeof(myCount)) != 0) {
-      LOG_MODULE_DECLARE(SpindleSpeed);
-      LOG_ERR("Failed to save rotation count to EEPROM");
-    }
-  }
-
-  void LoadCount() {
-    if (eeprom_read(eepromDev, 0, &myCount, sizeof(myCount)) != 0) {
-      LOG_MODULE_DECLARE(SpindleSpeed);
-      LOG_ERR("Failed to load rotation count from EEPROM");
-      myCount = 0; // Default to 0 if read fails
-    }
-  }
+  k_work_delayable saveCountWork;
+  k_work_delayable saveRatioWork;
+  static void saveCountWorkHandler(struct k_work *work);
+  static void saveRatioWorkHandler(struct k_work *work);
 
 public:
-  SpindleSpeed()
-      : qdecDev(DEVICE_DT_GET_ANY(nordic_qdec)),
-        eepromDev(DEVICE_DT_GET_ANY(nordic_nvmc)), myCount(0) {
-
-    instance = this;
-
-    if (!device_is_ready(qdecDev)) {
-      LOG_MODULE_DECLARE(SpindleSpeed);
-      LOG_ERR("Error: QDEC device is not ready.");
-      return;
-    }
-    if (!device_is_ready(eepromDev)) {
-      LOG_MODULE_DECLARE(SpindleSpeed);
-      LOG_ERR("Error: EEPROM device is not ready.");
-      return;
-    }
-
-    LoadCount(); // Load the saved count from EEPROM at start
-
-    struct sensor_trigger trig;
-    trig.type = SENSOR_TRIG_DATA_READY;
-    trig.chan = SENSOR_CHAN_ROTATION;
-
-    if (sensor_trigger_set(qdecDev, &trig, qdec_event_handler) != 0) {
-      LOG_MODULE_DECLARE(SpindleSpeed);
-      LOG_ERR("Error setting trigger for QDEC.");
-    }
-  }
-
-  ~SpindleSpeed() {
-    SaveCount(); // Save the count to EEPROM before shutting down
-  }
-
-  int Count() const { return myCount; }
+  SpindleSpeed();
+  int count() const;
+  int ratio() const;
 };

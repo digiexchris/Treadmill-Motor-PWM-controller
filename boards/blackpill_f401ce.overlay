@@ -16,3 +16,13 @@
         st,counts-per-revolution = <16>;
     };
 };
+
+&gpioa {
+    status = "okay";
+
+    encoder_button: button {
+        gpios = <0 GPIO_ACTIVE_LOW>; /* PA0, Active Low */
+        interrupt-parent = <&exti>;
+        gpio-hog;
+    };
+};
