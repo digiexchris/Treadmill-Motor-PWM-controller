@@ -11,9 +11,9 @@
 			"CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
 		},
 		"cmake.configureOnEdit": false,
-
+		"sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json",
 		// IntelliSense
-		"C_Cpp.default.compilerPath": "${userHome}/zephyr-sdk-0.16.1/arm-zephyr-eabi/bin/arm-zephyr-eabi-gcc",
+		"C_Cpp.default.compilerPath": "/opt/toolchains/zephyr-sdk-0.16.5/arm-zephyr-eabi/bin/arm-zephyr-eabi-gcc",
 		"C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
 
 		// File Associations
@@ -119,13 +119,20 @@
 			"diab",
 			"iar"
 		],
-		"cmake.options.statusBarVisibility": "visible"
+		"cmake.options.statusBarVisibility": "visible",
+		"cmake.additionalKits": [
+			"${workspaceFolder}/.devcontainer/cmake.kits.json"
+		],
+		"cortex-debug.armToolchainPath": "/opt/toolchains/zephyr-sdk-0.16.5/arm-zephyr-eabi/bin",
+		"cortex-debug.armToolchainPrefix": "arm-none-eabi",
+		"cortex-debug.openocdPath": "/usr/bin/openocd",
+		
 	},
 	"tasks": {
 		"version": "2.0.0",
 		"tasks": [
 			{
-				"label": "Build blackpill_f401ce",
+				"label": "Build blackpill_f411ce",
 				"type": "shell",
 				"group": {
 					"kind": "build",
@@ -137,7 +144,7 @@
 					"-p",
 					"auto",
 					"-b",
-					"blackpill_f401ce"
+					"blackpill_f411ce",
 				],
 				"problemMatcher": [
 					"$gcc"
@@ -242,30 +249,32 @@
 					"$gcc"
 				],
 			},
-			{
-				"label": "West Configurable Build",
-				"type": "shell",
-				"group": {
-					"kind": "build",
-				},
-				"command": "west",
-				"args": [
-					"build",
-					"-p",
-					"${input:pristine}",
-					"-b",
-					"${input:board}"
-				],
-				"problemMatcher": [
-					"$gcc"
-				]
-			},
+			// {
+			// 	"label": "West Configurable Build",
+			// 	"type": "shell",
+			// 	"group": {
+			// 		"kind": "build",
+			// 	},
+			// 	"command": "west",
+			// 	"args": [
+			// 		"build",
+			// 		"-p",
+			// 		"${input:pristine}",
+			// 		"-b",
+			// 		"${input:board}"
+			// 	],
+			// 	"problemMatcher": [
+			// 		"$gcc"
+			// 	]
+			// },
 			{
 				"label": "West Flash",
 				"type": "shell",
 				"command": "west",
 				"args": [
-					"flash"
+					"flash",
+					"--runner",
+					"openocd"
 				],
 				"problemMatcher": [
 					"$gcc"
@@ -313,26 +322,30 @@
 
 			{
 				"name": "Launch",
-				"device": "rpi_pico",
+				"device": "blackpill_f411ce",
 				"cwd": "${workspaceFolder}",
 				"executable": "build/zephyr/zephyr.elf",
 				"request": "launch",
 				"type": "cortex-debug",
 				"runToEntryPoint": "main",
+				"showDevDebugOutput": "raw",
 				"servertype": "openocd",
-				"gdbPath": "${userHome}/zephyr-sdk-0.16.1/arm-zephyr-eabi/bin/arm-zephyr-eabi-gdb",
-				"preLaunchTask": "West Build"
+				"configFiles":[
+					"${workspaceFolder}/boards/stm32f411ce.openocd.cfg"
+				],
+				"gdbPath": "/opt/toolchains/zephyr-sdk-0.16.5/arm-zephyr-eabi/bin/arm-zephyr-eabi-gdb"
+				//"preLaunchTask": "West Build"
 			},
 			{
 				"name": "Attach",
-				"device": "rpi_pico",
+				"device": "blackpill_f411ce",
 				"cwd": "${workspaceFolder}",
 				"executable": "build/zephyr/zephyr.elf",
 				"request": "attach",
 				"type": "cortex-debug",
 				"runToEntryPoint": "main",
 				"servertype": "openocd",
-				"gdbPath": "${userHome}/zephyr-sdk-0.16.1/arm-zephyr-eabi/bin/arm-zephyr-eabi-gdb"
+				"gdbPath": "/opt/toolchains/zephyr-sdk-0.16.5/arm-zephyr-eabi/bin/arm-zephyr-eabi-gdb"
 			},
 			{
 				"name": "Debug Test",
@@ -368,7 +381,12 @@
 			"ms-vscode.vscode-embedded-tools",
 			"ms-vscode.vscode-serial-monitor",
 			"marus25.cortex-debug",
-			"donjayamanne.python-environment-manager"
+			"donjayamanne.python-environment-manager",
+			"trond-snekvik.kconfig-lang",
+			"nordic-semiconductor.nrf-kconfig",
+			"spmeesseman.vscode-taskexplorer",
+			"sanaajani.taskrunnercode",
+			"actboy168.tasks"
 		]
 	}
 }

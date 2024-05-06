@@ -11,22 +11,27 @@
 #include <zephyr/types.h>
 
 class SpindleSpeed {
+public:
+  enum class Mode {
+    IDLE,
+    RUNNING,
+    CAL,
+  };
+
 private:
   const struct device *qdecDev;
   const struct device *eepromDev;
   const struct device *buttonDev;
+  const struct device *pwmDev;
+
   int myCount = 0;
-  float myRatio = 0.0f;
-  enum class Mode {
-    IDLE,
-    RUNNING,
-    RATIO,
-  } myMode;
+  float myRPMMultiplier = 50.0f;
+  Mode myMode = Mode::IDLE;
+  Mode lastMode = myMode;
 
   struct gpio_callback buttonCbData;
 
   int64_t buttonPressTime = 0;
-  Mode lastMode = Mode::IDLE;
 
   static void qdecEventHandler(const struct device *dev,
                                const struct sensor_trigger *trigger);
@@ -40,6 +45,8 @@ private:
   void saveRatio();
   void loadRatio();
 
+  void setSpindlePWM(uint16_t aDutyCycle);
+
   k_work_delayable saveCountWork;
   k_work_delayable saveRatioWork;
   static void saveCountWorkHandler(struct k_work *work);
@@ -47,6 +54,7 @@ private:
 
 public:
   SpindleSpeed();
-  int count() const;
-  int ratio() const;
+  int GetCount() const;
+  float GetRatio() const;
+  Mode GetMode() const;
 };

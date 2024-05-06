@@ -5,6 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "Display.hpp"
 #include "SpindleSpeed.hpp"
 #include <inttypes.h>
 #include <zephyr/device.h>
@@ -14,11 +15,13 @@
 #include <zephyr/sys/printk.h>
 #include <zephyr/sys/util.h>
 
+
 LOG_MODULE_REGISTER(main);
 #define SLEEP_TIME_MS 1
 
 int main() {
 
+  Display display;
   SpindleSpeed spindleSpeed;
 
   while (1) {

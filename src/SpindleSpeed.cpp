@@ -1,28 +1,38 @@
 #include "SpindleSpeed.hpp"
+#include "config.hpp"
 
+#include <zephyr/drivers/pwm.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/util.h>
 
 LOG_MODULE_REGISTER(SpindleSpeed);
 
 SpindleSpeed::SpindleSpeed()
-    : qdecDev(DEVICE_DT_GET_ANY(qdec0)),
-      eepromDev(DEVICE_DT_GET_ANY(nordic_nvmc)),
-      buttonDev(DEVICE_DT_GET_ANY(encoder_button)), myCount(0),
-      myMode(Mode::IDLE) {
+    : qdecDev(DEVICE_DT_GET_ANY(qdec0)), eepromDev(DEVICE_DT_GET_ANY(eeprom0)),
+      buttonDev(DEVICE_DT_GET_ANY(encoder_button)),
+      pwmDev(DEVICE_DT_GET_ANY(spindlepwm)) {
 
   if (!device_is_ready(qdecDev)) {
     LOG_ERR("Error: QDEC device is not ready.");
     return;
   }
+
   if (!device_is_ready(eepromDev)) {
     LOG_ERR("Error: EEPROM device is not ready.");
     return;
   }
+
   if (!device_is_ready(buttonDev)) {
     LOG_ERR("Error: Button device is not ready.");
     return;
   }
+
+  if (!device_is_ready(pwmDev)) {
+    LOG_ERR("Error: PWM device is not ready.");
+    return;
+  }
+
+  pwm_set_cycles(pwmDev, 0, PWM_FREQUENCY, 0, PWM_POLARITY_NORMAL);
 
   gpio_pin_configure(buttonDev, 0, GPIO_INPUT | GPIO_PULL_UP);
   gpio_pin_interrupt_configure(buttonDev, 0, GPIO_INT_EDGE_BOTH);
@@ -35,8 +45,8 @@ SpindleSpeed::SpindleSpeed()
   loadCount(); // Load the saved count from EEPROM at start
   loadRatio(); // Load the saved ratio from EEPROM at start
 
-  if (myRatio == 0) {
-    myRatio = 1.0f; // Default to 1.0 if no ratio is saved
+  if (myRPMMultiplier == 0) {
+    myRPMMultiplier = 1.0f; // Default to 1.0 if no ratio is saved
     saveRatio();
   }
 
@@ -49,9 +59,11 @@ SpindleSpeed::SpindleSpeed()
   }
 }
 
-int SpindleSpeed::count() const { return myCount; }
+int SpindleSpeed::GetCount() const { return myCount; }
 
-int SpindleSpeed::ratio() const { return myRatio; }
+float SpindleSpeed::GetRatio() const { return myRPMMultiplier; }
+
+SpindleSpeed::Mode SpindleSpeed::GetMode() const { return myMode; }
 
 void SpindleSpeed::qdecEventHandler(const struct device *dev,
                                     const struct sensor_trigger *trigger) {
@@ -63,7 +75,6 @@ void SpindleSpeed::qdecEventHandler(const struct device *dev,
 
 void SpindleSpeed::buttonEventHandler(const struct device *dev,
                                       struct gpio_callback *cb, uint32_t pins) {
-
   SpindleSpeed *instance = CONTAINER_OF(dev, SpindleSpeed, buttonDev);
   if (pins & BIT(0)) {
     instance->handleButtonPress();
@@ -72,21 +83,49 @@ void SpindleSpeed::buttonEventHandler(const struct device *dev,
   }
 }
 
-void SpindleSpeed::handleRotationEvent(const struct device *dev) {
+/*
+ * @brief Set the spindle speed controller's PWM duty cycle
+ * @param aDutyCycle The duty cycle percent (0 to 100)
+ */
+void SpindleSpeed::setSpindlePWM(uint16_t aDutyCycle) {
+  uint32_t period = (aDutyCycle / 100 * PWM_FREQUENCY);
+  pwm_set_cycles(pwmDev, 0, PWM_FREQUENCY, period, PWM_POLARITY_NORMAL);
+}
 
+void SpindleSpeed::handleRotationEvent(const struct device *dev) {
   struct sensor_value val;
   if (sensor_channel_get(dev, SENSOR_CHAN_ROTATION, &val) == 0) {
     switch (myMode) {
     case Mode::IDLE:
     case Mode::RUNNING:
       myCount += val.val1;
+      if (myCount < 0) {
+        myCount = 0;
+      }
+
+      if (myCount > 100) {
+        myCount = 100;
+      }
+
       LOG_INF("Current rotation count: %d", myCount);
       k_work_reschedule(&saveCountWork, K_SECONDS(30));
+
+      if (myMode == Mode::RUNNING) {
+        setSpindlePWM(myCount);
+      } else {
+        setSpindlePWM(0);
+      }
+
+      // todo queue work to update the display with the new calculated rpm based
+      // on mycount
+
       break;
-    case Mode::RATIO:
-      myRatio += (float)val.val1 / 50.0f;
-      LOG_INF("Current ratio: %.2f", (double)myRatio);
+    case Mode::CAL:
+      myRPMMultiplier += (float)val.val1;
+      LOG_INF("Current ratio: %.2f", (double)myRPMMultiplier);
       k_work_reschedule(&saveRatioWork, K_SECONDS(30));
+      // todo queue work to update the display with the new ratio and new
+      // calculated rpm
       break;
     }
   }
@@ -98,22 +137,29 @@ void SpindleSpeed::handleButtonRelease() {
   int64_t pressDuration = k_uptime_get() - buttonPressTime;
 
   if (pressDuration > 2000) { // Held longer than 2 seconds
-    if (myMode == Mode::RATIO) {
+    if (myMode == Mode::CAL) {
       myMode = lastMode; // Return to the last mode
-
+      // todo queue work for the display to switch back to last mode
     } else {
       lastMode = myMode; // Save current mode
-      myMode = Mode::RATIO;
+      myMode = Mode::CAL;
+      // todo queue work to switch the display mode to CAL+Ratio and the value
+      // to the calculated RPM
     }
   } else if (pressDuration >= 10 &&
              pressDuration <= 2000) { // Between 10ms and 2 seconds
     if (myMode == Mode::IDLE) {
       myMode = Mode::RUNNING;
+      setSpindlePWM(myCount);
+      // todo queue work for the display to switch to running mode and set the
+      // value to the mycount * multiplier
     } else if (myMode == Mode::RUNNING) {
       myMode = Mode::IDLE;
+      setSpindlePWM(0);
+      // todo queue work for the display to switch to idle mode and set the
+      // value to the mycount * multiplier
     }
   }
-  // Debounce logic or very short presses can be ignored
 }
 
 void SpindleSpeed::saveCount() {
@@ -130,16 +176,17 @@ void SpindleSpeed::loadCount() {
 }
 
 void SpindleSpeed::saveRatio() {
-  if (eeprom_write(eepromDev, sizeof(myCount), &myRatio, sizeof(myRatio)) !=
-      0) {
+  if (eeprom_write(eepromDev, sizeof(myCount), &myRPMMultiplier,
+                   sizeof(myRPMMultiplier)) != 0) {
     LOG_ERR("Failed to save ratio to EEPROM");
   }
 }
 
 void SpindleSpeed::loadRatio() {
-  if (eeprom_read(eepromDev, sizeof(myCount), &myRatio, sizeof(myRatio)) != 0) {
+  if (eeprom_read(eepromDev, sizeof(myCount), &myRPMMultiplier,
+                  sizeof(myRPMMultiplier)) != 0) {
     LOG_ERR("Failed to load ratio from EEPROM");
-    myRatio = 0.0f; // Default to 0 if read fails
+    myRPMMultiplier = 0.0f; // Default to 0 if read fails
   }
 }
 
