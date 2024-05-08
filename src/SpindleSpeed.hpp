@@ -10,6 +10,8 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/types.h>
 
+#include "Display.hpp"
+
 class SpindleSpeed {
 public:
   enum class Mode {
@@ -19,6 +21,8 @@ public:
   };
 
 private:
+  Display *const myDisplay;
+
   const struct device *qdecDev;
   const struct device *eepromDev;
   const struct device *buttonDev;
@@ -53,7 +57,7 @@ private:
   static void saveRatioWorkHandler(struct k_work *work);
 
 public:
-  SpindleSpeed();
+  SpindleSpeed(Display *aDisplay);
   int GetCount() const;
   float GetRatio() const;
   Mode GetMode() const;

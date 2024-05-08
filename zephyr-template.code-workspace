@@ -6,7 +6,7 @@
 	],
 	"settings": {
 		// Hush CMake
-		"cmake.configureOnOpen": true,
+		"cmake.configureOnOpen": false,
 		"cmake.configureSettings": {
 			"CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
 		},
@@ -108,7 +108,10 @@
 			"string_view": "cpp",
 			"cinttypes": "cpp",
 			"ztest.h": "c",
-			"hash_map": "cpp"
+			"hash_map": "cpp",
+			"lvgl.h": "c",
+			"lv_examples.h": "c",
+			"lv_obj.h": "c"
 		},
 		"cmake.enabledOutputParsers": [
 			"cmake",
@@ -126,6 +129,7 @@
 		"cortex-debug.armToolchainPath": "/opt/toolchains/zephyr-sdk-0.16.5/arm-zephyr-eabi/bin",
 		"cortex-debug.armToolchainPrefix": "arm-none-eabi",
 		"cortex-debug.openocdPath": "/usr/bin/openocd",
+		"cortex-debug.variableUseNaturalFormat": true
 		
 	},
 	"tasks": {
@@ -150,88 +154,25 @@
 					"$gcc"
 				],
 			},
-			// {
-			// 	"label": "Build STM32",
-			// 	"type": "shell",
-			// 	"group": {
-			// 		"kind": "build",
-			// 		"isDefault": true
-			// 	},
-			// 	"command": "west",
-			// 	"args": [
-			// 		"build",
-			// 		"-p",
-			// 		"auto",
-			// 		"-b",
-			// 		"stm32f411ceu6-blackpill"
-			// 	],
-			// 	"problemMatcher": [
-			// 		"$gcc"
-			// 	],
-			// },
-			// {
-			// 	"label": "Build Test",
-			// 	"type": "shell",
-			// 	"group": {
-			// 		"kind": "build",
-			// 		"isDefault": true
-			// 	},
-			// 	"command": "west",
-			// 	"args": [
-			// 		"build",
-			// 		"-b",
-			// 		"qemu_cortex_m3",
-			// 		"--",
-			// 		"-DCONFIG_ZTEST=y",
-			// 	],
-			// 	"options": {
-			// 		"cwd": "${workspaceFolder}/"
-			// 	  },
-			// 	"problemMatcher": [
-			// 		"$gcc"
-			// 	],
-			// },
-			// {
-			// 	"label": "Test",
-			// 	"type": "shell",
-			// 	"group": {
-			// 		"kind": "test",
-			// 		"isDefault": true
-			// 	},
-			// 	"command": "qemu-system-arm.exe",
-			// 	"args": [
-			// 		"-cpu",
-			// 		"cortex-m3",
-			// 		"-machine",
-			// 		"lm3s6965evb",
-			// 		"-nographic",
-			// 		"-vga",
-			// 		"none",
-			// 		"-net",
-			// 		"none",
-			// 		"-pidfile",
-			// 		"qemu.pid",
-			// 		"-serial",
-			// 		"mon:stdio",
-			// 		"-semihosting",
-			// 		"-kernel",
-			// 		"build/zephyr/zephyr.elf"
-			// 		// "build",
-			// 		// "-b",
-			// 		// "qemu_cortex_m3",
-			// 		// "-t",
-			// 		// "run"
-			// 	],
-			// 	"options": {
-			// 		"cwd": "${workspaceFolder}/"
-			// 	  },
-			// 	"problemMatcher": [
-			// 		"$gcc"
-			// 	],
-			// 	"dependsOn": [
-			// 		"Build Test"
-			// 	]
-			// },
+			{
+				"label": "Build Lotlin S2 Mini",
+				"type": "shell",
+				"group": {
+					"kind": "build",
+					"isDefault": true
+				},
+				"command": "west",
+				"args": [
+					"build",
+					"-p",
+					"auto",
+					"-b",
+					"esp32s2_lolin_mini",
+				],
+				"problemMatcher": [
+					"$gcc"
+				],
+			},
 			{
 				"label": "Clean",
 				"type": "shell",
@@ -249,32 +190,52 @@
 					"$gcc"
 				],
 			},
-			// {
-			// 	"label": "West Configurable Build",
-			// 	"type": "shell",
-			// 	"group": {
-			// 		"kind": "build",
-			// 	},
-			// 	"command": "west",
-			// 	"args": [
-			// 		"build",
-			// 		"-p",
-			// 		"${input:pristine}",
-			// 		"-b",
-			// 		"${input:board}"
-			// 	],
-			// 	"problemMatcher": [
-			// 		"$gcc"
-			// 	]
-			// },
 			{
-				"label": "West Flash",
+				"label": "OpenOCD stm32f411ce Flash",
+				"type": "shell",
+				"command": "openocd",
+				"args": [
+					"-s",
+					"/workspaces/zephyrproject/zephyr/boards/weact/blackpill_f411ce/support",
+					"-s", 
+					"/opt/toolchains/zephyr-sdk-0.16.5/sysroots/x86_64-pokysdk-linux/usr/share/openocd/scripts",
+					"-f",
+					"${workspaceFolder}/boards/stm32f411ce.openocd.cfg",
+					"-c",
+					"init",
+					"-c",
+					"targets",
+					"-c",
+					"reset halt",
+
+					"-c",
+					"flash write_image erase /workspaces/local/build/zephyr/zephyr.hex",
+
+					"-c",
+					"reset run",
+					"-c",
+					"shutdown"
+				],
+			},
+			{
+				"label": "West Flash Openocd",
 				"type": "shell",
 				"command": "west",
 				"args": [
 					"flash",
 					"--runner",
 					"openocd"
+				],
+				"problemMatcher": [
+					"$gcc"
+				]
+			},
+			{
+				"label": "West Flash Default",
+				"type": "shell",
+				"command": "west",
+				"args": [
+					"flash",
 				],
 				"problemMatcher": [
 					"$gcc"
@@ -327,9 +288,14 @@
 				"executable": "build/zephyr/zephyr.elf",
 				"request": "launch",
 				"type": "cortex-debug",
-				"runToEntryPoint": "main",
+				//"runToEntryPoint": "main",
+				"breakAfterReset": true,
 				"showDevDebugOutput": "raw",
 				"servertype": "openocd",
+				"liveWatch": {
+					"enabled": true,
+					"samplesPerSecond": 4
+				},
 				"configFiles":[
 					"${workspaceFolder}/boards/stm32f411ce.openocd.cfg"
 				],
@@ -386,7 +352,8 @@
 			"nordic-semiconductor.nrf-kconfig",
 			"spmeesseman.vscode-taskexplorer",
 			"sanaajani.taskrunnercode",
-			"actboy168.tasks"
+			"actboy168.tasks",
+			"trond-snekvik.devicetree"
 		]
 	}
 }

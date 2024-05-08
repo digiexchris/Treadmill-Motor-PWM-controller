@@ -1,7 +1,7 @@
 FROM ubuntu:22.04
 
 ## Arguments
-ARG ZSDK_VERSION=0.16.5
+ARG ZSDK_VERSION=0.16.6
 ARG LLVM_VERSION=14
 ARG WGET_ARGS="-q --show-progress --progress=bar:force:noscroll --no-check-certificate"
 
@@ -17,8 +17,8 @@ RUN	apt-get -y update && \
             python3-pip cmake git gpg-agent libncurses5 locales \
 			lsb-release make ninja-build device-tree-compiler software-properties-common \
 			ssh sudo unzip wget xz-utils \
-            gperf build-essential libc6-dev \
-  ccache dfu-util device-tree-compiler wget \
+            gperf build-essential libc6-dev openocd \
+  ccache dfu-util device-tree-compiler wget dotnet8 dotnet-sdk-8.0 dotnet-runtime-8.0 \
   python3-dev python3-pip python3-setuptools python3-tk python3-wheel xz-utils file \
   make gcc gcc-multilib g++-multilib libsdl2-dev libmagic1 && \
     apt-get clean && \
@@ -35,13 +35,13 @@ RUN pip3 install --no-cache-dir --upgrade wheel pip && \
     rm -rf $(pip cache dir)
 
 ## LLVM & clang-format
-RUN wget ${WGET_ARGS} https://apt.llvm.org/llvm.sh && \
-    chmod +x llvm.sh && \
-    ./llvm.sh ${LLVM_VERSION} && \
-    rm llvm.sh && \
-    apt-get install --no-install-recommends -y clangd clang-format-${LLVM_VERSION} && \
-    apt-get clean && \
-	apt-get autoremove --purge
+# RUN wget ${WGET_ARGS} https://apt.llvm.org/llvm.sh && \
+#     chmod +x llvm.sh && \
+#     ./llvm.sh ${LLVM_VERSION} && \
+#     rm llvm.sh && \
+#     apt-get install --no-install-recommends -y clangd clang-format-${LLVM_VERSION} && \
+#     apt-get clean && \
+# 	apt-get autoremove --purge
 
 # RUN update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-${LLVM_VERSION} 100
 # RUN update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-${LLVM_VERSION} 100
@@ -74,13 +74,13 @@ RUN west init /workspaces/zephyrproject && \
     #chown -R user:user /workspaces/zephyrproject
 
 ## install nrfjprog and Segger JLink Tools
-RUN wget ${WGET_ARGS} https://www.nordicsemi.com/-/media/Software-and-other-downloads/Desktop-software/nRF-command-line-tools/sw/Versions-10-x-x/10-12-1/nRFCommandLineTools10121Linuxamd64.tar.gz && \
-    tar xvfz nRFCommandLineTools10121Linuxamd64.tar.gz ./JLink_Linux_V688a_x86_64.deb ./nRF-Command-Line-Tools_10_12_1_Linux-amd64.deb && \
-	dpkg -i JLink_Linux_V688a_x86_64.deb && \
-    dpkg -i nRF-Command-Line-Tools_10_12_1_Linux-amd64.deb && \
-    ln -s /opt/nrfjprog/nrfjprog /usr/local/bin/nrfjprog && \
-    ln -s /opt/mergehex/mergehex /usr/local/bin/mergehex && \
-    rm nRFCommandLineTools10121Linuxamd64.tar.gz JLink_Linux_V688a_x86_64.deb nRF-Command-Line-Tools_10_12_1_Linux-amd64.deb
+# RUN wget ${WGET_ARGS} https://www.nordicsemi.com/-/media/Software-and-other-downloads/Desktop-software/nRF-command-line-tools/sw/Versions-10-x-x/10-12-1/nRFCommandLineTools10121Linuxamd64.tar.gz && \
+#     tar xvfz nRFCommandLineTools10121Linuxamd64.tar.gz ./JLink_Linux_V688a_x86_64.deb ./nRF-Command-Line-Tools_10_12_1_Linux-amd64.deb && \
+# 	dpkg -i JLink_Linux_V688a_x86_64.deb && \
+#     dpkg -i nRF-Command-Line-Tools_10_12_1_Linux-amd64.deb && \
+#     ln -s /opt/nrfjprog/nrfjprog /usr/local/bin/nrfjprog && \
+#     ln -s /opt/mergehex/mergehex /usr/local/bin/mergehex && \
+#     rm nRFCommandLineTools10121Linuxamd64.tar.gz JLink_Linux_V688a_x86_64.deb nRF-Command-Line-Tools_10_12_1_Linux-amd64.deb
 
 ## add user
 RUN groupadd -g $GID -o user && \

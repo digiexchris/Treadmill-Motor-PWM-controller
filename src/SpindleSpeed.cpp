@@ -7,11 +7,15 @@
 
 LOG_MODULE_REGISTER(SpindleSpeed);
 
-SpindleSpeed::SpindleSpeed()
+SpindleSpeed::SpindleSpeed(Display *aDisplay)
     : qdecDev(DEVICE_DT_GET_ANY(qdec0)), eepromDev(DEVICE_DT_GET_ANY(eeprom0)),
       buttonDev(DEVICE_DT_GET_ANY(encoder_button)),
-      pwmDev(DEVICE_DT_GET_ANY(spindlepwm)) {
+      pwmDev(DEVICE_DT_GET_ANY(spindlepwm)), myDisplay(aDisplay) {
 
+  if (!myDisplay->IsReady()) {
+    LOG_ERR("Error: Display::Init() has not been called yet.");
+    return;
+  }
   if (!device_is_ready(qdecDev)) {
     LOG_ERR("Error: QDEC device is not ready.");
     return;
@@ -173,6 +177,8 @@ void SpindleSpeed::loadCount() {
     LOG_ERR("Failed to load rotation count from EEPROM");
     myCount = 0; // Default to 0 if read fails
   }
+
+  myDisplay->SetSetRpmValue(myCount * myRPMMultiplier);
 }
 
 void SpindleSpeed::saveRatio() {

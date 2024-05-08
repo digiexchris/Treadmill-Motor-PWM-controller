@@ -1,88 +1,95 @@
 / {
+    // aliases {
+    //     //qdec0 = &qdec;
+    //     //spindlepwm0 = &pwm4;
+    //     //eeprom0 = &flash0;
+    // };
+
     aliases {
-        qdec0 = &qdec;
-        spindlepwm0 = &pwm4;
-        eeprom0 = &flash0;
+	led0 = &user_led;
+	display0 = &st7789v0;
     };
 
     chosen {
-		zephyr,display = &st7789v_st7789v_waveshare_240x240;
-	};
-};
-
-&timers1 {
-    status = "okay";
-
-    qdec: qdec {
-        status = "okay";
-        pinctrl-0 = <&tim1_ch1_pa8 &tim1_ch2_pa9>;
-        pinctrl-names = "default";
-        st,input-polarity-inverted;
-        st,input-filter-level = <FDIV32_N8>;
-        st,counts-per-revolution = <16>;
+	zephyr,display = &st7789v0;
     };
 };
 
-&timers4 {
-	status = "okay";
+// &timers1 {
+//     status = "okay";
 
-	pwm4: pwm {
-		status = "okay";
-		pinctrl-0 = <&tim4_ch1_pb6>;
-		pinctrl-names = "default";
-        ch1 {
-            status = "okay";
-            pwm-period = <25000>; /* Period for 40 Hz */
-        };
-	};
-};
+//     qdec: qdec {
+//         status = "okay";
+//         pinctrl-0 = <&tim1_ch1_pa8 &tim1_ch2_pa9>;
+//         pinctrl-names = "default";
+//         st,input-polarity-inverted;
+//         st,input-filter-level = <FDIV32_N8>;
+//         st,counts-per-revolution = <16>;
+//     };
+// };
 
-&gpioa {
-    status = "okay";
+// &timers4 {
+// 	status = "okay";
 
-    run_button: button0 {
-        gpios = <0 GPIO_ACTIVE_HIGH>; /* PA0, Active Low */
-        interrupt-parent = <&exti>;
-        gpio-hog;
-    };
+// 	pwm4: pwm {
+// 		status = "okay";
+// 		pinctrl-0 = <&tim4_ch1_pb6>;
+// 		pinctrl-names = "default";
+//         ch1 {
+//             status = "okay";
+//             pwm-period = <25000>; /* Period for 40 Hz */
+//         };
+// 	};
+// };
 
-    cal_button: button1 {
-        gpios = <1 GPIO_ACTIVE_HIGH>; /* PA1, Active Low */
-        interrupt-parent = <&exti>;
-        gpio-hog;
-    };
-};
+// &gpioa {
+//     status = "okay";
 
-	arduino_i2c: &i2c1 {
-        status = "okay";
+//     run_button: button0 {
+//         gpios = <0 GPIO_ACTIVE_HIGH>; /* PA0, Active Low */
+//         interrupt-parent = <&exti>;
+//         gpio-hog;
+//     };
 
-        display0: ssd1306@3c {
-            compatible = "solomon,ssd1306fb";
-            reg = <0x3c>;
-            width = <128>;
-            height = <64>;
-            segment-offset = <0>;
-            page-offset = <0>;
-            display-offset = <0>;
-            multiplex-ratio = <63>;
-            segment-remap;
-            com-invdir;
-            prechargep = <0x22>;
-        };
-    };
+//     cal_button: button1 {
+//         gpios = <1 GPIO_ACTIVE_HIGH>; /* PA1, Active Low */
+//         interrupt-parent = <&exti>;
+//         gpio-hog;
+//     };
+// };
 
-arduino_spi: &spi1 {
+// 	arduino_i2c: &i2c1 {
+//         status = "okay";
+
+//         display0: ssd1306@3c {
+//             compatible = "solomon,ssd1306fb";
+//             reg = <0x3c>;
+//             width = <128>;
+//             height = <64>;
+//             segment-offset = <0>;
+//             page-offset = <0>;
+//             display-offset = <0>;
+//             multiplex-ratio = <63>;
+//             segment-remap;
+//             com-invdir;
+//             prechargep = <0x22>;
+//         };
+//     };
+
+&spi1 {
 	status = "okay";
 	cs-gpios = <&gpiob 13 GPIO_ACTIVE_LOW>;	/* PB13 */
 
-	st7789v_st7789v_waveshare_240x240: st7789v@0 { //DIN = PA7 
+    //pinctrl-0 = <&spi1_sck_pb3 &spi1_mosi_pa7>;
+
+	st7789v0:st7789v@0 { //DIN = PA7 
 		compatible = "sitronix,st7789v";
-		spi-max-frequency = <20000000>;
+		spi-max-frequency = <500000>;
 		reg = <0>;
 		cmd-data-gpios = <&gpiob 14 GPIO_ACTIVE_LOW>; /* PB14 */
 		reset-gpios = <&gpiob 15 GPIO_ACTIVE_LOW>; /* PB15 */
-		width = <320>;
-		height = <240>;
+		width = <240>;
+		height = <320>;
 		x-offset = <0>;
 		y-offset = <0>;
 		vcom = <0x19>;
