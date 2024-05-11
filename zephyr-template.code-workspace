@@ -129,8 +129,18 @@
 		"cortex-debug.armToolchainPath": "/opt/toolchains/zephyr-sdk-0.16.5/arm-zephyr-eabi/bin",
 		"cortex-debug.armToolchainPrefix": "arm-none-eabi",
 		"cortex-debug.openocdPath": "/usr/bin/openocd",
-		"cortex-debug.variableUseNaturalFormat": true
-		
+		"cortex-debug.variableUseNaturalFormat": true,
+        "editor.detectIndentation": false,
+        "editor.defaultFormatter": "seaube.clangformat",
+        "editor.formatOnSave": true,
+        "C_Cpp.default.intelliSenseMode": "linux-clang-arm",
+        "C_Cpp.codeFolding": "disabled",
+        "devicetree.defaultBoard": "blackpill_f411ce",
+        "devicetree.bindings": [
+            
+            "${zephyrBase}/dts/bindings",
+            "${zephyrBase}/../nrf/dts/bindings"
+        ]
 	},
 	"tasks": {
 		"version": "2.0.0",

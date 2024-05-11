@@ -1,40 +1,60 @@
 #pragma once
 
+#include "Enum.hpp"
+#include <array>
 #include <lvgl.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/display.h>
 
-class Display {
+class Display
+{
 public:
-  Display(const struct device *aDisplayDevice);
-  void Init();
-  bool IsReady();
-  void SetMode(const char *mode);
-  void SetValue(const char *value);
-  uint32_t Update();
-  void SetSetRpmValue(int32_t aMinValue, int32_t aMaxValue, int32_t aValue);
+	struct RPMScale
+	{
+		lv_obj_t *myScale;
+		lv_obj_t *myRequestedLabel;
+		lv_obj_t *myActualLabel;
+		lv_obj_t *myPWMLabel;
+		int32_t myMinValue;
+		int32_t myMaxValue;
+	};
+
+	struct ModeBar
+	{
+		lv_obj_t *myModeLabel;
+		lv_obj_t *myModeContainer;
+	};
+
+	Display(const struct device *aDisplayDevice, const uint16_t myMinRPMValue, const uint16_t myMaxRPMValue);
+
+	void Init();
+	bool IsReady();
+	void SetMode(SpindleMode aMode);
+
+	void SetRequestedSpeed(int16_t setValue);
+	void SetCurrentSpeed(int16_t actualValue);
+	void SetPWMValue(int16_t pwmValue);
+	void SetRPMScale(const uint16_t aMinValue, const uint16_t aMaxValue);
+	uint32_t Update();
 
 private:
-  bool myReady = false;
-  const struct device *myDisplayDevice;
-  lv_obj_t *myModeLabel;
-  lv_obj_t *myValueLabel;
+	bool myReady = false;
+	const struct device *myDisplayDevice;
+	ModeBar *myModeBar;
+	lv_obj_t *myValueLabel;
 
-  //  main page
-  lv_obj_t *myMainPage;
+	uint16_t myMinRPMValue;
+	uint16_t myMaxRPMValue;
 
-  void DrawMainPage(lv_obj_t *aPage);
-  // lv_obj_t *myMainPageTable;
-  // static void DrawTableEventCallback(lv_event_t *e);
+	std::array<lv_style_t *, 3> myModeStyles;
 
-  lv_obj_t *myMainPageSetRPMScale;
+	//  main page
+	lv_obj_t *myMainPage;
 
-  // Generic widget functions
-  void SetScaleValue(lv_obj_t *aScale, int32_t aFromMinValue,
-                     int32_t aFromMaxValue, int32_t aScaledMinValue,
-                     int32_t aScaledMaxValue, int32_t v);
-  void CreateScale(lv_obj_t *aParent, lv_obj_t *anOutScale, const int aMinValue,
-                   const int aMaxValue);
+	void DrawMainPage(lv_obj_t *aPage);
 
-  static void ScaleValueChangedEventCallback(lv_event_t *e);
+	RPMScale *myRPMScale;
+
+	// Generic widget functions
+	void CreateScale(lv_obj_t *aParent, RPMScale *anOutScale);
 };

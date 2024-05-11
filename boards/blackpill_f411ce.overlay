@@ -1,13 +1,10 @@
 / {
-    // aliases {
-    //     //qdec0 = &qdec;
-    //     //spindlepwm0 = &pwm4;
-    //     //eeprom0 = &flash0;
-    // };
-
     aliases {
-	led0 = &user_led;
-	display0 = &st7789v0;
+        qdec0 = &qdec;
+        spindlepwm0 = &pwm4;
+        eeprom0 = &flash0;
+        led0 = &user_led;
+        display0 = &st7789v0;
     };
 
     chosen {
@@ -15,66 +12,71 @@
     };
 };
 
-// &timers1 {
-//     status = "okay";
+&timers1 {
+    status = "okay";
 
-//     qdec: qdec {
-//         status = "okay";
-//         pinctrl-0 = <&tim1_ch1_pa8 &tim1_ch2_pa9>;
-//         pinctrl-names = "default";
-//         st,input-polarity-inverted;
-//         st,input-filter-level = <FDIV32_N8>;
-//         st,counts-per-revolution = <16>;
-//     };
-// };
+    qdec: qdec {
+        status = "okay";
+        pinctrl-0 = <&tim1_ch1_pa8 &tim1_ch2_pa9>;
+        pinctrl-names = "default";
+        st,input-polarity-inverted;
+        st,input-filter-level = <FDIV32_N8>;
+        st,counts-per-revolution = <16>;
+    };
 
-// &timers4 {
-// 	status = "okay";
+    rpm_processing_timer: timer@1 {
+        status = "okay";
+        pinctrl-0 = <&tim1_ch3_pa10>; // Reuse if appropriate or assign a new channel
+        pinctrl-names = "default";
+        st,prescaler = <99>; // Prescaler for 1MHz if clock is 100MHz
+        st,auto-reload = <250000>; // Adjusted for 250 ms interval, ensure timer capacity
+    };
 
-// 	pwm4: pwm {
-// 		status = "okay";
-// 		pinctrl-0 = <&tim4_ch1_pb6>;
-// 		pinctrl-names = "default";
-//         ch1 {
-//             status = "okay";
-//             pwm-period = <25000>; /* Period for 40 Hz */
-//         };
-// 	};
-// };
+};
 
-// &gpioa {
-//     status = "okay";
+&timers2 {
+    status = "okay";
 
-//     run_button: button0 {
-//         gpios = <0 GPIO_ACTIVE_HIGH>; /* PA0, Active Low */
-//         interrupt-parent = <&exti>;
-//         gpio-hog;
-//     };
+    rpm_processing_timer: timer@2 {
+        status = "okay";
+        pinctrl-0 = <&tim2_ch1_pa0>; // Using a channel of TIM2 for pulse input
+        pinctrl-names = "default";
+        st,prescaler = <0>; // No prescaler to count each pulse
+        st,auto-reload = <0xffffffff>; // Max value for a 32-bit timer
+        counter-mode = "up"; // Counting up
+    };
+};
 
-//     cal_button: button1 {
-//         gpios = <1 GPIO_ACTIVE_HIGH>; /* PA1, Active Low */
-//         interrupt-parent = <&exti>;
-//         gpio-hog;
-//     };
-// };
+&timers4 {
+	status = "okay";
 
-// 	arduino_i2c: &i2c1 {
-//         status = "okay";
+	pwm4: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim4_ch1_pb6>;
+		pinctrl-names = "default";
+        ch1 {
+            status = "okay";
+            pwm-period = <25000>; /* Period for 40 Hz */
+        };
+	};
+};
 
-//         display0: ssd1306@3c {
-//             compatible = "solomon,ssd1306fb";
-//             reg = <0x3c>;
-//             width = <128>;
-//             height = <64>;
-//             segment-offset = <0>;
-//             page-offset = <0>;
-//             display-offset = <0>;
-//             multiplex-ratio = <63>;
-//             segment-remap;
-//             com-invdir;
-//             prechargep = <0x22>;
-//         };
-//     };
+&gpioa {
+    status = "okay";
+
+    run_button: button0 {
+        gpios = <0 GPIO_ACTIVE_HIGH>; /* PA0, Active Low */
+        interrupt-parent = <&exti>;
+        gpio-hog;
+    };
+
+    cal_button: button1 {
+        gpios = <1 GPIO_ACTIVE_HIGH>; /* PA1, Active Low */
+        interrupt-parent = <&exti>;
+        gpio-hog;
+    };
+};
+
 
 &spi1 {
 	status = "okay";
