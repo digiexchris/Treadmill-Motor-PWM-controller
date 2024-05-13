@@ -1,15 +1,63 @@
 / {
-    aliases {
-        qdec0 = &qdec;
-        spindlepwm0 = &pwm4;
-        eeprom0 = &flash0;
-        led0 = &user_led;
-        display0 = &st7789v0;
-    };
+
 
     chosen {
 	zephyr,display = &st7789v0;
     };
+
+	rpmpulsecounter: rpmpulsecounter {
+        compatible = "rpm-input";
+        status = "okay";
+        gpios = <&gpioa 0 GPIO_ACTIVE_HIGH>; /* PA0, Active High */
+    };
+
+	buttons {
+		debounce-interval-ms = <50>;
+		status = "okay";
+		compatible = "gpio-keys";
+
+		runButton: button_1 {
+			status = "okay";
+			
+			gpios = <&gpioa 1 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH) >;
+			
+			zephyr,code = <INPUT_KEY_1>;
+			//zephyr,code = <BTN_0>;
+		};
+
+		stopButton: button_2 {
+			status = "okay";
+			
+			gpios = <&gpioa 2 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH) >;
+			
+			zephyr,code = <INPUT_KEY_2>;
+			//zephyr,code = <BTN_0>;
+		};
+
+    };
+
+    spindles {
+        compatible = "generic-pwm";
+        spindle1: spindle1 {
+            
+            status = "okay";
+            pwms = <&pwm4 3 PWM_MSEC(25) PWM_POLARITY_NORMAL>;
+            //pwms-names = "spindle1";
+        };
+    };
+
+    
+
+    aliases {
+        qdec0 = &qdec;
+        //spindlepwm0 = &spindle1;
+        eeprom0 = &flash0;
+        led0 = &user_led;
+        display0 = &st7789v0;
+		runbutton0 = &runButton;
+		stopbutton0 = &stopButton;
+    };
+
 };
 
 &timers1 {
@@ -17,34 +65,14 @@
 
     qdec: qdec {
         status = "okay";
-        pinctrl-0 = <&tim1_ch1_pa8 &tim1_ch2_pa9>;
+        compatible = "st,stm32-qdec";
+        pinctrl-0 = <&tim1_ch3_pa10 &tim1_ch4_pa11>;
         pinctrl-names = "default";
         st,input-polarity-inverted;
         st,input-filter-level = <FDIV32_N8>;
         st,counts-per-revolution = <16>;
     };
 
-    rpm_processing_timer: timer@1 {
-        status = "okay";
-        pinctrl-0 = <&tim1_ch3_pa10>; // Reuse if appropriate or assign a new channel
-        pinctrl-names = "default";
-        st,prescaler = <99>; // Prescaler for 1MHz if clock is 100MHz
-        st,auto-reload = <250000>; // Adjusted for 250 ms interval, ensure timer capacity
-    };
-
-};
-
-&timers2 {
-    status = "okay";
-
-    rpm_processing_timer: timer@2 {
-        status = "okay";
-        pinctrl-0 = <&tim2_ch1_pa0>; // Using a channel of TIM2 for pulse input
-        pinctrl-names = "default";
-        st,prescaler = <0>; // No prescaler to count each pulse
-        st,auto-reload = <0xffffffff>; // Max value for a 32-bit timer
-        counter-mode = "up"; // Counting up
-    };
 };
 
 &timers4 {
@@ -52,30 +80,23 @@
 
 	pwm4: pwm {
 		status = "okay";
-		pinctrl-0 = <&tim4_ch1_pb6>;
+        //pwm-cells = <3>;
+        // compatible = "st,stm32-pwm";
+		pinctrl-0 = <&tim4_ch3_pb8>;
 		pinctrl-names = "default";
-        ch1 {
-            status = "okay";
-            pwm-period = <25000>; /* Period for 40 Hz */
-        };
 	};
 };
+	
 
-&gpioa {
-    status = "okay";
-
-    run_button: button0 {
-        gpios = <0 GPIO_ACTIVE_HIGH>; /* PA0, Active Low */
-        interrupt-parent = <&exti>;
-        gpio-hog;
-    };
-
-    cal_button: button1 {
-        gpios = <1 GPIO_ACTIVE_HIGH>; /* PA1, Active Low */
-        interrupt-parent = <&exti>;
-        gpio-hog;
-    };
+&usart1 {
+	pinctrl-0 = <&usart1_tx_pb6 &usart1_rx_pb7>;
+	pinctrl-names = "default";
+	status = "okay";
+	current-speed = <115200>;
 };
+
+	
+
 
 
 &spi1 {
@@ -86,7 +107,7 @@
 
 	st7789v0:st7789v@0 { //DIN = PA7 
 		compatible = "sitronix,st7789v";
-		spi-max-frequency = <500000>;
+		spi-max-frequency = <4000000>;
 		reg = <0>;
 		cmd-data-gpios = <&gpiob 14 GPIO_ACTIVE_LOW>; /* PB14 */
 		reset-gpios = <&gpiob 15 GPIO_ACTIVE_LOW>; /* PB15 */

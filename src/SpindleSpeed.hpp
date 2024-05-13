@@ -12,15 +12,22 @@
 
 #include "Display.hpp"
 #include "Enum.hpp"
+#include "zephyr/drivers/pwm.h"
+#include "zephyr/kernel/thread_stack.h"
 
 class SpindleSpeed
 {
 public:
+	int GetCount() const;
+	float GetRatio() const;
+	SpindleMode GetMode() const;
+	SpindleSpeed();
+
 private:
 	const struct device *qdecDev = nullptr;
 	const struct device *eepromDev = nullptr;
-	const struct device *buttonDev = nullptr;
-	const struct device *pwmDev = nullptr;
+	// const struct device *pwmDev = nullptr;
+	struct pwm_dt_spec pwmSpec;
 	Display *const myDisplay = nullptr;
 	int myCount = 0;
 	int myCurrentRPM = 2000;
@@ -33,19 +40,13 @@ private:
 
 	int64_t buttonPressTime = 0;
 
-	static void qdecEventHandler(const struct device *dev,
-								 const struct sensor_trigger *trigger);
-	static void buttonEventHandler(const struct device *dev,
-								   struct gpio_callback *cb, uint32_t pins);
-	void handleRotationEvent(const struct device *dev);
-	void handleButtonPress();
-	void handleButtonRelease();
+	static void qdecThread(void *aSpindleSpeed, void *, void *);
+	struct k_thread qdecThreadData;
+	void handleRotationEvent();
 	void saveCount();
 	void loadCount();
 	void saveRatio();
 	void loadRatio();
-
-	void UpdateDisplay();
 
 	void setSpindlePWM(uint16_t aDutyCycle);
 
@@ -55,8 +56,4 @@ private:
 	static void saveRatioWorkHandler(struct k_work *work);
 
 public:
-	SpindleSpeed(Display *aDisplay);
-	int GetCount() const;
-	float GetRatio() const;
-	SpindleMode GetMode() const;
 };

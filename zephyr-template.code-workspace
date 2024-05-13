@@ -140,7 +140,10 @@
             
             "${zephyrBase}/dts/bindings",
             "${zephyrBase}/../nrf/dts/bindings"
-        ]
+        ],
+        "[cpp]": {
+            "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+        }
 	},
 	"tasks": {
 		"version": "2.0.0",
@@ -164,25 +167,25 @@
 					"$gcc"
 				],
 			},
-			{
-				"label": "Build Lotlin S2 Mini",
-				"type": "shell",
-				"group": {
-					"kind": "build",
-					"isDefault": true
-				},
-				"command": "west",
-				"args": [
-					"build",
-					"-p",
-					"auto",
-					"-b",
-					"esp32s2_lolin_mini",
-				],
-				"problemMatcher": [
-					"$gcc"
-				],
-			},
+			// {
+			// 	"label": "Build ESP32 S3",
+			// 	"type": "shell",
+			// 	"group": {
+			// 		"kind": "build",
+			// 		"isDefault": true
+			// 	},
+			// 	"command": "west",
+			// 	"args": [
+			// 		"build",
+			// 		"-p",
+			// 		"auto",
+			// 		"-b",
+			// 		"esp32s3_devkitm",
+			// 	],
+			// 	"problemMatcher": [
+			// 		"$gcc"
+			// 	],
+			// },
 			{
 				"label": "Clean",
 				"type": "shell",
@@ -210,7 +213,7 @@
 					"-s", 
 					"/opt/toolchains/zephyr-sdk-0.16.5/sysroots/x86_64-pokysdk-linux/usr/share/openocd/scripts",
 					"-f",
-					"${workspaceFolder}/boards/stm32f411ce.openocd.cfg",
+					"${workspaceFolder}/boards//stm32f411ce.openocd.cfg",
 					"-c",
 					"init",
 					"-c",
@@ -219,38 +222,28 @@
 					"reset halt",
 
 					"-c",
-					"flash write_image erase /workspaces/local/build/zephyr/zephyr.hex",
+					"flash write_image erase ${workspaceFolder}/build/zephyr/zephyr.hex",
 
 					"-c",
 					"reset run",
 					"-c",
 					"shutdown"
 				],
+                "dependsOn": "Build blackpill_f411ce"
 			},
-			{
-				"label": "West Flash Openocd",
-				"type": "shell",
-				"command": "west",
-				"args": [
-					"flash",
-					"--runner",
-					"openocd"
-				],
-				"problemMatcher": [
-					"$gcc"
-				]
-			},
-			{
-				"label": "West Flash Default",
-				"type": "shell",
-				"command": "west",
-				"args": [
-					"flash",
-				],
-				"problemMatcher": [
-					"$gcc"
-				]
-			},
+			// {
+			// 	"label": "West Flash Openocd",
+			// 	"type": "shell",
+			// 	"command": "west",
+			// 	"args": [
+			// 		"flash",
+			// 		"--runner",
+			// 		"openocd"
+			// 	],
+			// 	"problemMatcher": [
+			// 		"$gcc"
+			// 	]
+			// },
 			{
 				"label": "GUI Config",
 				"type": "shell",
@@ -298,17 +291,42 @@
 				"executable": "build/zephyr/zephyr.elf",
 				"request": "launch",
 				"type": "cortex-debug",
-				//"runToEntryPoint": "main",
-				"breakAfterReset": true,
-				"showDevDebugOutput": "raw",
+				// "runToEntryPoint": "main",
+				//"breakAfterReset": true,
+				//"showDevDebugOutput": "raw",
 				"servertype": "openocd",
+				// "liveWatch": {
+				// 	"enabled": true,
+				// 	"samplesPerSecond": 4
+				// },
+				"configFiles":[
+					"${workspaceFolder}/boards/stm32f411ce.openocd.cfg"
+				],
+				"gdbPath": "/opt/toolchains/zephyr-sdk-0.16.5/arm-zephyr-eabi/bin/arm-zephyr-eabi-gdb"
+				//"preLaunchTask": "West Build"
+			},
+
+            {
+				"name": "Launch pyOCD",
+				"device": "blackpill_f411ce",
+				"cwd": "${workspaceFolder}",
+				"executable": "build/zephyr/zephyr.elf",
+				"request": "launch",
+				"type": "cortex-debug",
+				"runToEntryPoint": "main",
+				//"breakAfterReset": true,
+				//"showDevDebugOutput": "raw",
+				"servertype": "pyocd",
 				"liveWatch": {
 					"enabled": true,
 					"samplesPerSecond": 4
 				},
-				"configFiles":[
-					"${workspaceFolder}/boards/stm32f411ce.openocd.cfg"
-				],
+                "configFiles":[
+                    "${workspaceFolder}/boards/weact/blackpill_f411ce_RPM/stm32f411ce.openocd.cfg"
+                ],
+				// "configFiles":[
+				// 	"${workspaceFolder}/boards/stm32f411ce.openocd.cfg"
+				// ],
 				"gdbPath": "/opt/toolchains/zephyr-sdk-0.16.5/arm-zephyr-eabi/bin/arm-zephyr-eabi-gdb"
 				//"preLaunchTask": "West Build"
 			},

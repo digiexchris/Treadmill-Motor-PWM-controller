@@ -1,6 +1,7 @@
 #include "Display.hpp"
 #include "Enum.hpp"
 
+#if CONFIG_LVGL
 #include <lvgl.h>
 
 void Display::DrawMainPage(lv_obj_t *aPage)
@@ -16,20 +17,17 @@ void Display::DrawMainPage(lv_obj_t *aPage)
 	lv_style_set_text_color(labelStyle, lv_color_black());
 	lv_style_set_text_font(labelStyle, &lv_font_montserrat_30);
 
-	for (lv_style_t *style : myModeStyles)
-	{
-		lv_style_init(style);
-		lv_style_set_width(style, 210);
-		lv_style_set_height(style, 100);
-		lv_style_set_line_rounded(style, true);
-	}
+	lv_style_t *containerStyle = new lv_style_t();
 
-	lv_style_set_bg_color(myModeStyles[(int)SpindleMode::IDLE], lv_palette_main(LV_PALETTE_RED));
-	lv_style_set_bg_color(myModeStyles[(int)SpindleMode::RUNNING], lv_palette_main(LV_PALETTE_GREEN));
-	lv_style_set_bg_color(myModeStyles[(int)SpindleMode::CAL], lv_palette_main(LV_PALETTE_BLUE));
+	lv_style_init(containerStyle);
+	lv_style_set_width(containerStyle, 210);
+	lv_style_set_height(containerStyle, 100);
+	lv_style_set_line_rounded(containerStyle, true);
 
-	lv_label_set_text(myModeBar->myModeLabel, "Idle");
-	lv_obj_add_style(myModeBar->myModeContainer, myModeStyles[(int)SpindleMode::IDLE], 0);
+	lv_style_set_bg_color(containerStyle, lv_palette_main(LV_PALETTE_RED));
+
+	lv_label_set_text(myModeBar->myModeLabel, "IDLE");
+	lv_obj_add_style(myModeBar->myModeContainer, containerStyle, 0);
 	lv_obj_add_style(myModeBar->myModeLabel, labelStyle, 0);
 	lv_obj_align(myModeBar->myModeContainer, LV_ALIGN_BOTTOM_MID, 0, 0);
 	lv_obj_align(myModeBar->myModeLabel, LV_ALIGN_CENTER, 0, 0);
@@ -74,7 +72,7 @@ void Display::CreateScale(lv_obj_t *aParent, RPMScale *anOutScale)
 	lv_obj_set_size(anOutScale->myScale, 200, 200);
 	lv_arc_set_rotation(anOutScale->myScale, 135);
 	lv_arc_set_bg_angles(anOutScale->myScale, 0, 270);
-	lv_arc_set_value(anOutScale->myScale, myMinValue);
+	lv_arc_set_value(anOutScale->myScale, 0);
 	lv_obj_center(anOutScale->myScale);
 	lv_obj_align(anOutScale->myRequestedLabel, LV_ALIGN_CENTER, 0, -20);
 	lv_obj_align_to(anOutScale->myActualLabel, anOutScale->myRequestedLabel, LV_ALIGN_BOTTOM_MID, 0, -20);
@@ -88,3 +86,5 @@ void Display::CreateScale(lv_obj_t *aParent, RPMScale *anOutScale)
 	// /*Manually update the label for the first time*/
 	// lv_event_send(anOutScale->myScale, LV_EVENT_VALUE_CHANGED, anOutScale);
 }
+
+#endif

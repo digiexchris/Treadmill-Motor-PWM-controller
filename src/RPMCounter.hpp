@@ -1,29 +1,34 @@
 #pragma once
 
 #include "Display.hpp"
+#include <cstdint>
+#include <stdint.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 
 class RPMCounter
 {
 public:
-	RPMCounter(Display *aDisplay);
-	~RPMCounter();
+	RPMCounter();
+	void Init();
+	int16_t GetRPM();
 
 private:
-	Display *myDisplay;
 	RPMCounter *thisRPMCounter;
-	const struct device *myCountingTimer;
-	const struct device *myProcessingTimer;
-	k_thread_stack_t *myRpmStack = nullptr;
-	struct k_thread myRpmThread;
-	struct k_sem myRpmSem;
-	uint32_t myCurrentTimerCount = 0;
-	uint32_t myPreviuosTimerCount = 0;
-	volatile uint32_t myPulseCount = 0;
-	struct gpio_callback myGpioCbData;
+	// const struct device *myPulseCounter;
+	struct gpio_dt_spec myPulseCounterSpec;
 
-	static void ProcessingTimerHandler(const struct device *aDev, void *aRPMCounter);
-	void ProcessPulses(uint32_t aPulseCount);
-	void InitTimers();
+	k_mutex myPulseCountMutex;
+
+	uint8_t myPulseCount = 0;
+
+	uint32_t myCurrentUptime = 0;
+	uint32_t myLastUptime = 0;
+
+	gpio_callback myRPMCallbackData;
+
+	uint16_t myRPMValue = 0;
+
+	void ProcessPulses();
+	static void RPMPulseCallback(const struct device *aDev, struct gpio_callback *aCb, uint32_t aPins);
 };

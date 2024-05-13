@@ -1,14 +1,21 @@
 #pragma once
 
 #include "Enum.hpp"
-#include <array>
+
+// #include <array>
+#include <cstdint>
+#if CONFIG_LVGL
+#include "core/lv_obj.h"
 #include <lvgl.h>
+#endif
+#include <sys/_stdint.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/display.h>
 
 class Display
 {
 public:
+#if CONFIG_LVGL
 	struct RPMScale
 	{
 		lv_obj_t *myScale;
@@ -24,6 +31,7 @@ public:
 		lv_obj_t *myModeLabel;
 		lv_obj_t *myModeContainer;
 	};
+#endif
 
 	Display(const struct device *aDisplayDevice, const uint16_t myMinRPMValue, const uint16_t myMaxRPMValue);
 
@@ -40,13 +48,18 @@ public:
 private:
 	bool myReady = false;
 	const struct device *myDisplayDevice;
-	ModeBar *myModeBar;
-	lv_obj_t *myValueLabel;
 
 	uint16_t myMinRPMValue;
 	uint16_t myMaxRPMValue;
+#if CONFIG_LVGL
+	ModeBar *myModeBar;
+	lv_obj_t *myValueLabel;
+	struct PageStyle
+	{
+		lv_style_t *myStyle;
+	};
 
-	std::array<lv_style_t *, 3> myModeStyles;
+	PageStyle myModeStyles[3];
 
 	//  main page
 	lv_obj_t *myMainPage;
@@ -57,4 +70,5 @@ private:
 
 	// Generic widget functions
 	void CreateScale(lv_obj_t *aParent, RPMScale *anOutScale);
+#endif
 };

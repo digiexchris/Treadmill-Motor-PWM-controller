@@ -1,88 +1,97 @@
 #include "RPMCounter.hpp"
 #include "config.hpp"
-#include <zephyr/drivers/counter.h>
+#include "zephyr/devicetree.h"
+#include "zephyr/sys/util.h"
+#include <cstdint>
+#include <zephyr/device.h>
+#include <zephyr/devicetree/gpio.h>
+#include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(RPMCounter, LOG_LEVEL_INF);
 
-RPMCounter::RPMCounter(Display *aDisplay) : myDisplay(aDisplay)
+#define RPMPULSE_COUNTER_NODE DT_NODELABEL(rpmpulsecounter)
+
+#if DT_NODE_HAS_STATUS(RPMPULSE_COUNTER_NODE, okay)
+#define GPIO_DEV DT_GPIO_LABEL(RPMPULSE_COUNTER_NODE, gpios)
+#define GPIO_PIN DT_GPIO_PIN(RPMPULSE_COUNTER_NODE, gpios)
+#define GPIO_FLAGS DT_GPIO_FLAGS(RPMPULSE_COUNTER_NODE, gpios)
+#else
+#error "Unsupported board: rpmpulsecounter node not defined or not enabled"
+#endif
+
+RPMCounter::RPMCounter()
 {
-	if (!myDisplay->IsReady())
+	myPulseCounterSpec = GPIO_DT_SPEC_GET(RPMPULSE_COUNTER_NODE, gpios);
+	if (!gpio_is_ready_dt(&myPulseCounterSpec))
 	{
-		LOG_ERR("Error: Display::Init() has not been called yet.");
+		LOG_ERR("Device not ready\n");
+		k_oops();
 		return;
 	}
 
+	k_mutex_init(&myPulseCountMutex);
 	thisRPMCounter = this;
-	InitTimers();
+	myCurrentUptime = k_uptime_get_32();
+	myLastUptime = myCurrentUptime;
+
+	gpio_pin_configure_dt(&myPulseCounterSpec, GPIO_INPUT | GPIO_PULL_DOWN);
+	gpio_pin_interrupt_configure_dt(&myPulseCounterSpec, GPIO_INT_EDGE_RISING);
+	gpio_init_callback(&myRPMCallbackData, RPMPulseCallback, BIT(myPulseCounterSpec.pin));
+	gpio_add_callback(myPulseCounterSpec.port, &myRPMCallbackData);
 }
 
-void RPMCounter::InitTimers()
+void RPMCounter::Init()
 {
-	// Binding to the pulse counting timer
-	myCountingTimer = device_get_binding("RPM_PULSE_COUNTER");
-	if (!myCountingTimer)
-	{
-		LOG_ERR("Failed to get binding for counting timer");
-		return;
-	}
+}
 
-	// Binding to the processing timer
-	myProcessingTimer = device_get_binding("RPM_PROCESSING_TIMER");
-	if (!myProcessingTimer)
-	{
-		LOG_ERR("Failed to get binding for processing timer");
-		return;
-	}
+void RPMCounter::RPMPulseCallback(const struct device *aDev, struct gpio_callback *aCb, uint32_t aPins)
+{
+	RPMCounter *rpmCounter = CONTAINER_OF(aCb, class RPMCounter, myRPMCallbackData);
 
-	// Start the processing timer and configure the overflow callback
-	struct counter_top_cfg myTopCfg;
-	myTopCfg.ticks = counter_us_to_ticks(myProcessingTimer, 250000); // Convert 250 ms to timer ticks
-	myTopCfg.callback = ProcessingTimerHandler;						 // Callback to handle the overflow event
-	myTopCfg.user_data = this;										 // Passing this instance for use within the callback if needed
-
-	if (counter_set_top_value(myProcessingTimer, &myTopCfg) < 0)
+	rpmCounter->myPulseCount++;
+	if (rpmCounter->myPulseCount >= RPM_COUNTER_TIME_BETWEEN_NUM_TICKS)
 	{
-		LOG_ERR("Failed to set top value for processing timer");
-		return;
-	}
-
-	if (counter_start(myProcessingTimer) != 0)
-	{
-		LOG_ERR("Failed to start processing timer");
-		return;
-	}
-
-	if (counter_start(myCountingTimer) != 0)
-	{
-		LOG_ERR("Failed to start counting timer");
-		return;
+		rpmCounter->ProcessPulses();
+		rpmCounter->myPulseCount = 0;
 	}
 }
 
-void RPMCounter::ProcessingTimerHandler(const struct device *aDev, void *aRPMCounter)
+int16_t RPMCounter::GetRPM()
 {
-	RPMCounter *myInstance = static_cast<RPMCounter *>(aRPMCounter);
-	myInstance->myPreviuosTimerCount = myInstance->myCurrentTimerCount;
-	counter_get_value(myInstance->myCountingTimer, &myInstance->myCurrentTimerCount);
-	uint32_t pulseCount = myInstance->myCurrentTimerCount - myInstance->myPreviuosTimerCount;
-	myInstance->ProcessPulses(pulseCount);
+	if (myCurrentUptime + 1000 < k_uptime_get_32())
+	{
+		myRPMValue = 0;
+	}
+
+	return myRPMValue;
 }
 
-void RPMCounter::ProcessPulses(uint32_t aPulseCount)
+void RPMCounter::ProcessPulses()
 {
-	LOG_INF("Processing %u pulses", aPulseCount);
+	myLastUptime = myCurrentUptime;
 
-	// todo this math is wrong, it should be 60 seconds divided by the time between pulses
-	// otherwise as the rpm is at lower levels it will be rounding to the nearest count if
-	// the count and the next count don't land on even 1/4 second intervals.
-	int16_t rpm = (aPulseCount * 240);
+	myCurrentUptime = k_uptime_get_32();
 
-	myDisplay->SetCurrentSpeed(rpm);
-}
+	uint32_t timeDiff = myCurrentUptime - myLastUptime;
 
-RPMCounter::~RPMCounter()
-{
-	k_free(myRpmStack);
+	// Calculate the time difference in seconds
+	float timeInSeconds = timeDiff / 1000.0f; // Convert milliseconds to seconds
+
+	// Calculate revolutions per second
+	float revolutionsPerSecond = 1 / (timeInSeconds / RPM_COUNTER_TIME_BETWEEN_NUM_TICKS);
+
+	// Convert revolutions per second to revolutions per minute
+	float rpm = revolutionsPerSecond * 60;
+
+	myRPMValue = static_cast<int16_t>(rpm);
+
+	printk("RPM: %d\n", myRPMValue);
+
+	// Display the calculated RPM on the display
+	// if (myDisplay->IsReady())
+	// {
+	// 	myDisplay->SetCurrentSpeed(static_cast<uint16_t>(rpm));
+	// }
 }
