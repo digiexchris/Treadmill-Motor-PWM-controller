@@ -1,7 +1,9 @@
-#include "Display.hpp"
+#include "Enum.hpp"
+#include "LVGLDisplay.hpp"
 #include "RPMCounter.hpp"
 #include "SpindleSpeed.hpp"
 #include <stdio.h>
+#include <sys/_stdint.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -36,7 +38,7 @@ static const struct gpio_dt_spec stopButton = GPIO_DT_SPEC_GET_OR(STOPBUTTON0_NO
 static struct gpio_callback startButtonCbData;
 static struct gpio_callback stopButtonCbData;
 
-Display *display;
+LVGLDisplay *display;
 RPMCounter *rpmCounter;
 SpindleSpeed *spindleSpeed;
 
@@ -47,19 +49,13 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb,
 	{
 		LOG_INF("Run Button pressed at %" PRIu32 "\n", k_cycle_get_32());
 
-		if (display->IsReady())
-		{
-			display->SetMode(SpindleMode::RUNNING);
-		}
+		spindleSpeed->SetMode(SpindleMode::RUNNING);
 	}
 	else if (pins & BIT(stopButton.pin))
 	{
 		LOG_INF("Stop Button pressed at %" PRIu32 "\n", k_cycle_get_32());
 
-		if (display->IsReady())
-		{
-			display->SetMode(SpindleMode::IDLE);
-		}
+		spindleSpeed->SetMode(SpindleMode::IDLE);
 	}
 }
 
@@ -85,7 +81,7 @@ int main(void)
 
 	LOG_INF("Spindle Speed setup\n");
 
-	display = new Display(displayDevice, 0, 5000);
+	display = new LVGLDisplay(displayDevice, 0, 5000);
 	display->Init();
 
 	LOG_INF("Display setup\n");
@@ -95,7 +91,13 @@ int main(void)
 	{
 		if (display->IsReady())
 		{
+			uint16_t requestedRPM = spindleSpeed->GetRequestedRPM();
+			uint16_t currentPWM = spindleSpeed->GetPWMValue();
+			SpindleMode currentMode = spindleSpeed->GetMode();
 			display->SetCurrentSpeed(rpmCounter->GetRPM());
+			display->SetPWMValue(currentPWM);
+			display->SetRequestedSpeed(requestedRPM);
+			display->SetMode(currentMode);
 			k_msleep(display->Update());
 		}
 		else

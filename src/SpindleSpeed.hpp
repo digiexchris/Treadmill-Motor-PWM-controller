@@ -1,5 +1,6 @@
 #pragma once
 
+#include <sys/_stdint.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/eeprom.h>
 #include <zephyr/drivers/gpio.h>
@@ -10,7 +11,6 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/types.h>
 
-#include "Display.hpp"
 #include "Enum.hpp"
 #include "zephyr/drivers/pwm.h"
 #include "zephyr/kernel/thread_stack.h"
@@ -18,9 +18,12 @@
 class SpindleSpeed
 {
 public:
-	int GetCount() const;
+	uint16_t GetCount() const;
+	uint16_t GetRequestedRPM() const;
 	float GetRatio() const;
 	SpindleMode GetMode() const;
+	uint16_t GetPWMValue() const;
+	void SetMode(SpindleMode aMode);
 	SpindleSpeed();
 
 private:
@@ -28,7 +31,6 @@ private:
 	const struct device *eepromDev = nullptr;
 	// const struct device *pwmDev = nullptr;
 	struct pwm_dt_spec pwmSpec;
-	Display *const myDisplay = nullptr;
 	int myCount = 0;
 	int myCurrentRPM = 2000;
 	int myPWMValue = 0;

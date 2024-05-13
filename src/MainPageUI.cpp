@@ -1,10 +1,10 @@
-#include "Display.hpp"
 #include "Enum.hpp"
+#include "LVGLDisplay.hpp"
 
 #if CONFIG_LVGL
 #include <lvgl.h>
 
-void Display::DrawMainPage(lv_obj_t *aPage)
+void LVGLDisplay::DrawMainPage(lv_obj_t *aPage)
 {
 	CreateScale(aPage, myRPMScale);
 
@@ -40,7 +40,7 @@ void Display::DrawMainPage(lv_obj_t *aPage)
 /**
  * A simple round scale
  */
-void Display::CreateScale(lv_obj_t *aParent, RPMScale *anOutScale)
+void LVGLDisplay::CreateScale(lv_obj_t *aParent, RPMScale *anOutScale)
 {
 	/*Create an Arc*/
 	anOutScale->myScale = lv_arc_create(aParent);

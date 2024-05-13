@@ -2,20 +2,18 @@
 
 #include "Enum.hpp"
 
-// #include <array>
-#include <cstdint>
 #if CONFIG_LVGL
+#include "IDisplay.hpp"
 #include "core/lv_obj.h"
+#include <cstdint>
 #include <lvgl.h>
-#endif
 #include <sys/_stdint.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/display.h>
 
-class Display
+class LVGLDisplay : public IDisplay
 {
 public:
-#if CONFIG_LVGL
 	struct RPMScale
 	{
 		lv_obj_t *myScale;
@@ -31,19 +29,16 @@ public:
 		lv_obj_t *myModeLabel;
 		lv_obj_t *myModeContainer;
 	};
-#endif
 
-	Display(const struct device *aDisplayDevice, const uint16_t myMinRPMValue, const uint16_t myMaxRPMValue);
-
-	void Init();
-	bool IsReady();
-	void SetMode(SpindleMode aMode);
-
-	void SetRequestedSpeed(int16_t setValue);
-	void SetCurrentSpeed(int16_t actualValue);
-	void SetPWMValue(int16_t pwmValue);
-	void SetRPMScale(const uint16_t aMinValue, const uint16_t aMaxValue);
-	uint32_t Update();
+	LVGLDisplay(const struct device *aDisplayDevice, const uint16_t myMinRPMValue, const uint16_t myMaxRPMValue);
+	virtual void Init() override;
+	virtual void SetMode(SpindleMode aMode) override;
+	virtual bool IsReady() override;
+	virtual void SetRequestedSpeed(int16_t setValue) override;
+	virtual void SetCurrentSpeed(int16_t actualValue) override;
+	virtual void SetPWMValue(int16_t pwmValue) override;
+	virtual void SetRPMScale(const uint16_t aMinValue, const uint16_t aMaxValue) override;
+	virtual uint32_t Update() override;
 
 private:
 	bool myReady = false;
@@ -51,7 +46,7 @@ private:
 
 	uint16_t myMinRPMValue;
 	uint16_t myMaxRPMValue;
-#if CONFIG_LVGL
+
 	ModeBar *myModeBar;
 	lv_obj_t *myValueLabel;
 	struct PageStyle
@@ -70,5 +65,5 @@ private:
 
 	// Generic widget functions
 	void CreateScale(lv_obj_t *aParent, RPMScale *anOutScale);
-#endif
 };
+#endif

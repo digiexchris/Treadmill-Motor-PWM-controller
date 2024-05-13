@@ -4,6 +4,7 @@
 #include "config.hpp"
 #include "zephyr/devicetree/pwms.h"
 
+#include <sys/_stdint.h>
 #include <zephyr/drivers/pwm.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/util.h>
@@ -82,7 +83,19 @@ SpindleSpeed::SpindleSpeed()
 	// loadCount(); // Load the saved count from EEPROM at start
 }
 
-int SpindleSpeed::GetCount() const { return myCount; }
+void SpindleSpeed::SetMode(SpindleMode aMode)
+{
+	if (aMode == myMode)
+	{
+		return;
+	}
+
+	myMode = aMode;
+}
+
+uint16_t SpindleSpeed::GetPWMValue() const { return myPWMValue; }
+
+uint16_t SpindleSpeed::GetCount() const { return myCount; }
 
 float SpindleSpeed::GetRatio() const { return myRPMMultiplier; }
 
@@ -105,6 +118,11 @@ void SpindleSpeed::qdecThread(void *aSpindleSpeed, void *, void *)
 		LOG_ERR("Failed to get instance of SpindleSpeed");
 		k_oops();
 	}
+}
+
+uint16_t SpindleSpeed::GetRequestedRPM() const
+{
+	return (myCount * myRPMMultiplier);
 }
 
 /*
@@ -189,11 +207,6 @@ void SpindleSpeed::loadCount()
 		LOG_ERR("Failed to load rotation count from EEPROM");
 		myCount = 0; // Default to 0 if read fails
 	}
-
-	myDisplay->SetMode(myMode);
-	myDisplay->SetRequestedSpeed(ScaleValue(myCount, 0, 100, 0, 100 * myRPMMultiplier));
-	myDisplay->SetCurrentSpeed(myCurrentRPM);
-	myDisplay->SetPWMValue(myPWMValue);
 
 	// TODO rescale the display based on the loaded rpm multiplier
 }

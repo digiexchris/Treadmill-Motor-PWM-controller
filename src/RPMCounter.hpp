@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Display.hpp"
+#include "IDisplay.hpp"
 #include <cstdint>
 #include <stdint.h>
 #include <zephyr/drivers/gpio.h>

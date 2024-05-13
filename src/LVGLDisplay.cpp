@@ -1,13 +1,13 @@
-#include "Display.hpp"
+#if CONFIG_LVGL
+
+#include "LVGLDisplay.hpp"
 #include "Enum.hpp"
 
 #include "Helpers.hpp"
 
-#if CONFIG_LVGL
 #include "lv_api_map.h"
 #include <lvgl.h>
 #include <widgets/lv_arc.h>
-#endif
 
 #include <zephyr/drivers/display.h>
 #include <zephyr/kernel.h>
@@ -15,17 +15,17 @@
 
 LOG_MODULE_REGISTER(displayClass, LOG_LEVEL_INF);
 
-Display::Display(const struct device *aDisplayDevice, const uint16_t aMinRPMValue, const uint16_t aMaxRPMValue)
+LVGLDisplay::LVGLDisplay(const struct device *aDisplayDevice, const uint16_t aMinRPMValue, const uint16_t aMaxRPMValue)
 	: myDisplayDevice(aDisplayDevice),
 #if CONFIG_LVGL
-	  myModeBar(nullptr),
-	  myValueLabel(nullptr),
+	  myMinRPMValue(aMinRPMValue),
+	  myMaxRPMValue(aMaxRPMValue),
 #endif
-	  myMinRPMValue(aMinRPMValue), myMaxRPMValue(aMaxRPMValue)
+	  myModeBar(nullptr), myValueLabel(nullptr)
 {
 }
 
-void Display::Init()
+void LVGLDisplay::Init()
 {
 	if (!myDisplayDevice)
 	{
@@ -55,9 +55,7 @@ void Display::Init()
 	myReady = true;
 }
 
-bool Display::IsReady() { return myReady; }
-
-uint32_t Display::Update()
+uint32_t LVGLDisplay::Update()
 {
 
 #if CONFIG_LVGL
@@ -67,7 +65,7 @@ uint32_t Display::Update()
 #endif
 }
 
-void Display::SetMode(SpindleMode aMode)
+void LVGLDisplay::SetMode(SpindleMode aMode)
 {
 #if CONFIG_LVGL
 	if (aMode == SpindleMode::IDLE)
@@ -92,14 +90,19 @@ void Display::SetMode(SpindleMode aMode)
 #endif
 }
 
-void Display::SetRequestedSpeed(int16_t setValue)
+bool LVGLDisplay::IsReady()
+{
+	return myReady;
+}
+
+void LVGLDisplay::SetRequestedSpeed(int16_t setValue)
 {
 #if CONFIG_LVGL
 	lv_label_set_text_fmt(myRPMScale->myRequestedLabel, "%d", setValue);
 #endif
 }
 
-void Display::SetCurrentSpeed(int16_t actualValue)
+void LVGLDisplay::SetCurrentSpeed(int16_t actualValue)
 {
 #if CONFIG_LVGL
 	lv_arc_set_value(myRPMScale->myScale, static_cast<int16_t>(ScaleValue(actualValue, myRPMScale->myMinValue, myRPMScale->myMaxValue, 0, 100)));
@@ -107,17 +110,19 @@ void Display::SetCurrentSpeed(int16_t actualValue)
 #endif
 }
 
-void Display::SetPWMValue(int16_t pwmValue)
+void LVGLDisplay::SetPWMValue(int16_t pwmValue)
 {
 #if CONFIG_LVGL
 	lv_label_set_text_fmt(myRPMScale->myPWMLabel, "%d%%", pwmValue);
 #endif
 }
 
-void Display::SetRPMScale(const uint16_t aMinValue, const uint16_t aMaxValue)
+void LVGLDisplay::SetRPMScale(const uint16_t aMinValue, const uint16_t aMaxValue)
 {
 #if CONFIG_LVGL
 	myRPMScale->myMinValue = aMinValue;
 	myRPMScale->myMaxValue = aMaxValue;
 #endif
 }
+
+#endif
