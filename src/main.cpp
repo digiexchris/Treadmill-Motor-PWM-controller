@@ -1,7 +1,11 @@
 #include "Enum.hpp"
+#include "config.hpp"
+#if ENABLE_DISPLAY
 #include "LVGLDisplay.hpp"
+#endif
 #include "RPMCounter.hpp"
 #include "SpindleSpeed.hpp"
+#include "zephyr/kernel/thread_stack.h"
 #include <stdio.h>
 #include <sys/_stdint.h>
 #include <zephyr/drivers/gpio.h>
@@ -38,7 +42,6 @@ static const struct gpio_dt_spec stopButton = GPIO_DT_SPEC_GET_OR(STOPBUTTON0_NO
 static struct gpio_callback startButtonCbData;
 static struct gpio_callback stopButtonCbData;
 
-LVGLDisplay *display;
 RPMCounter *rpmCounter;
 SpindleSpeed *spindleSpeed;
 
@@ -62,6 +65,38 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb,
 extern void setupButtons();
 extern void setupButton(const gpio_dt_spec &aButton, gpio_callback *aCb);
 
+#if ENABLE_DISPLAY
+LVGLDisplay *display;
+K_THREAD_STACK_DEFINE(displayUpdateStack, 4096);
+K_THREAD_STACK_DECLARE(displayUpdateStack, K_THREAD_STACK_SIZEOF(displayUpdateStack));
+
+struct k_thread displayUpdateThreadData;
+
+void updateDisplayThread(void *ad, void *as, void *ar)
+{
+	LVGLDisplay *d = static_cast<LVGLDisplay *>(ad);
+	SpindleSpeed *s = static_cast<SpindleSpeed *>(as);
+	RPMCounter *r = static_cast<RPMCounter *>(ar);
+
+	while (1)
+	{
+		if (d->IsReady())
+		{
+
+			d->SetCurrentSpeed(r->GetRPM());
+			d->SetPWMValue(s->GetPWMValue());
+			d->SetRequestedSpeed(s->GetRequestedRPM());
+			d->SetMode(s->GetMode());
+			k_msleep(d->Update());
+		}
+		else
+		{
+			k_msleep(100000);
+		}
+	}
+}
+#endif
+
 int main(void)
 {
 
@@ -81,34 +116,21 @@ int main(void)
 
 	LOG_INF("Spindle Speed setup\n");
 
+#if ENABLE_DISPLAY
 	display = new LVGLDisplay(displayDevice, 0, 5000);
 	display->Init();
 
 	LOG_INF("Display setup\n");
 
+	k_thread_create(&displayUpdateThreadData, displayUpdateStack, K_THREAD_STACK_SIZEOF(displayUpdateStack),
+					updateDisplayThread, display, spindleSpeed, rpmCounter, 8, 0, K_NO_WAIT);
+#endif
+
 	LOG_INF("Done Boot! %s\n", CONFIG_BOARD);
 	while (1)
 	{
-		if (display->IsReady())
-		{
-			uint16_t requestedRPM = spindleSpeed->GetRequestedRPM();
-			uint16_t currentPWM = spindleSpeed->GetPWMValue();
-			SpindleMode currentMode = spindleSpeed->GetMode();
-			display->SetCurrentSpeed(rpmCounter->GetRPM());
-			display->SetPWMValue(currentPWM);
-			display->SetRequestedSpeed(requestedRPM);
-			display->SetMode(currentMode);
-			k_msleep(display->Update());
-		}
-		else
-		{
-			k_msleep(100000);
-		}
-
-		LOG_INF("Done Updating Display");
+		k_sleep(K_FOREVER);
 	}
-
-	return 0;
 }
 
 void blink(const struct gpio_dt_spec *led, uint32_t sleep_ms)

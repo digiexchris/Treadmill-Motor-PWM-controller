@@ -31,7 +31,6 @@ RPMCounter::RPMCounter()
 		return;
 	}
 
-	k_mutex_init(&myPulseCountMutex);
 	thisRPMCounter = this;
 	myCurrentUptime = k_uptime_get_32();
 	myLastUptime = myCurrentUptime;
@@ -90,8 +89,11 @@ void RPMCounter::ProcessPulses()
 	printk("RPM: %d\n", myRPMValue);
 
 	// Display the calculated RPM on the display
-	// if (myDisplay->IsReady())
-	// {
-	// 	myDisplay->SetCurrentSpeed(static_cast<uint16_t>(rpm));
-	// }
+
+	// #if ENABLE_DISPLAY
+	// 	if (myDisplay->IsReady())
+	// 	{
+	// 		myDisplay->SetCurrentSpeed(static_cast<uint16_t>(rpm));
+	// 	}
+	// #endif
 }

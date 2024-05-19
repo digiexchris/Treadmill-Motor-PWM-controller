@@ -1,0 +1,3 @@
+[submodule "lib/arm2d"]
+	path = lib/arm2d
+	url = https://github.com/ARM-software/Arm-2D.git

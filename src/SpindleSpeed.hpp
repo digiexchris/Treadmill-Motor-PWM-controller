@@ -32,17 +32,21 @@ private:
 	// const struct device *pwmDev = nullptr;
 	struct pwm_dt_spec pwmSpec;
 	int myCount = 0;
+	int myPreviousCount = 0;
+	int myPreviousEncoderVal = 0;
 	int myCurrentRPM = 2000;
 	int myPWMValue = 0;
 	float myRPMMultiplier = 50.0f;
 	SpindleMode myMode = SpindleMode::IDLE;
 	SpindleMode lastMode = myMode;
+	sensor_trigger *qdecSensorTrig;
 
 	struct gpio_callback buttonCbData;
 
 	int64_t buttonPressTime = 0;
 
 	static void qdecThread(void *aSpindleSpeed, void *, void *);
+	static void RotationTriggerHandler(const struct device *dev, const struct sensor_trigger *trigger);
 	struct k_thread qdecThreadData;
 	void handleRotationEvent();
 	void saveCount();

@@ -2,6 +2,9 @@
 	"folders": [
 		{
 			"path": "."
+		},
+        {
+			"path": "../zephyrproject/zephyr"
 		}
 	],
 	"settings": {
@@ -11,10 +14,10 @@
 			"CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
 		},
 		"cmake.configureOnEdit": false,
-		"sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json",
+		"sonarlint.pathToCompileCommands": "/workspaces/local/build/compile_commands.json",
 		// IntelliSense
 		"C_Cpp.default.compilerPath": "/opt/toolchains/zephyr-sdk-0.16.5/arm-zephyr-eabi/bin/arm-zephyr-eabi-gcc",
-		"C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+		"C_Cpp.default.compileCommands": "/workspaces/local/build/compile_commands.json",
 
 		// File Associations
 		"files.associations": {
@@ -124,7 +127,7 @@
 		],
 		"cmake.options.statusBarVisibility": "visible",
 		"cmake.additionalKits": [
-			"${workspaceFolder}/.devcontainer/cmake.kits.json"
+			"/workspaces/local/.devcontainer/cmake.kits.json"
 		],
 		"cortex-debug.armToolchainPath": "/opt/toolchains/zephyr-sdk-0.16.5/arm-zephyr-eabi/bin",
 		"cortex-debug.armToolchainPrefix": "arm-none-eabi",
@@ -213,7 +216,7 @@
 					"-s", 
 					"/opt/toolchains/zephyr-sdk-0.16.5/sysroots/x86_64-pokysdk-linux/usr/share/openocd/scripts",
 					"-f",
-					"${workspaceFolder}/boards//stm32f411ce.openocd.cfg",
+					"/workspaces/local/boards//stm32f411ce.openocd.cfg",
 					"-c",
 					"init",
 					"-c",
@@ -222,7 +225,7 @@
 					"reset halt",
 
 					"-c",
-					"flash write_image erase ${workspaceFolder}/build/zephyr/zephyr.hex",
+					"flash write_image erase /workspaces/local/build/zephyr/zephyr.hex",
 
 					"-c",
 					"reset run",
@@ -287,7 +290,7 @@
 			{
 				"name": "Launch",
 				"device": "blackpill_f411ce",
-				"cwd": "${workspaceFolder}",
+				"cwd": "/workspaces/local",
 				"executable": "build/zephyr/zephyr.elf",
 				"request": "launch",
 				"type": "cortex-debug",
@@ -295,13 +298,27 @@
 				//"breakAfterReset": true,
 				//"showDevDebugOutput": "raw",
 				"servertype": "openocd",
-				// "liveWatch": {
-				// 	"enabled": true,
-				// 	"samplesPerSecond": 4
-				// },
+				"liveWatch": {
+					"enabled": true,
+					"samplesPerSecond": 4
+				},
 				"configFiles":[
-					"${workspaceFolder}/boards/stm32f411ce.openocd.cfg"
+					"/workspaces/local/boards/stm32f411ce.openocd.cfg"
 				],
+                "swoConfig":{
+                    "enabled":true,
+                    "source":"probe",
+                    "swoFrequency": 2000000,
+                    "cpuFrequency":72000000,
+                    "decoders": [
+                        {
+                            "port": 0,
+                            "type": "console",
+                            "label": "SWO output",
+                            "encoding":"ascii"
+                        }
+                    ]
+                },
 				"gdbPath": "/opt/toolchains/zephyr-sdk-0.16.5/arm-zephyr-eabi/bin/arm-zephyr-eabi-gdb"
 				//"preLaunchTask": "West Build"
 			},
@@ -309,7 +326,7 @@
             {
 				"name": "Launch pyOCD",
 				"device": "blackpill_f411ce",
-				"cwd": "${workspaceFolder}",
+				"cwd": "/workspaces/local",
 				"executable": "build/zephyr/zephyr.elf",
 				"request": "launch",
 				"type": "cortex-debug",
@@ -322,10 +339,10 @@
 					"samplesPerSecond": 4
 				},
                 "configFiles":[
-                    "${workspaceFolder}/boards/weact/blackpill_f411ce_RPM/stm32f411ce.openocd.cfg"
+                    "/workspaces/local/boards/weact/blackpill_f411ce_RPM/stm32f411ce.openocd.cfg"
                 ],
 				// "configFiles":[
-				// 	"${workspaceFolder}/boards/stm32f411ce.openocd.cfg"
+				// 	"/workspaces/local/boards/stm32f411ce.openocd.cfg"
 				// ],
 				"gdbPath": "/opt/toolchains/zephyr-sdk-0.16.5/arm-zephyr-eabi/bin/arm-zephyr-eabi-gdb"
 				//"preLaunchTask": "West Build"
@@ -333,7 +350,7 @@
 			{
 				"name": "Attach",
 				"device": "blackpill_f411ce",
-				"cwd": "${workspaceFolder}",
+				"cwd": "/workspaces/local",
 				"executable": "build/zephyr/zephyr.elf",
 				"request": "attach",
 				"type": "cortex-debug",
@@ -344,8 +361,8 @@
 			{
 				"name": "Debug Test",
 				"device": "qemu-cortex-m3",
-				"cwd": "${workspaceFolder}/test",
-				"executable": "${workspaceFolder}/build/zephyr/zephyr.elf",
+				"cwd": "/workspaces/local/test",
+				"executable": "/workspaces/local/build/zephyr/zephyr.elf",
 				"request": "launch",
 				"cpu" : "cortex-m3",
 				"type": "cortex-debug",
@@ -357,8 +374,8 @@
 			// {
 			// 	"name": "Run Test",
 			// 	"device": "qemu-cortex-m3",
-			// 	"cwd": "${workspaceFolder}/test",
-			// 	"executable": "${workspaceFolder}/build/zephyr/zephyr.elf",
+			// 	"cwd": "/workspaces/local/test",
+			// 	"executable": "/workspaces/local/build/zephyr/zephyr.elf",
 			// 	"request": "launch",
 			// 	"type": "",
 			// 	"runToEntryPoint": "main",

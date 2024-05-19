@@ -59,7 +59,6 @@ if(ELS_TESTS)
     
 endif()
 
-
 include_directories(src)
 target_sources(app PRIVATE ${app_sources})
 

@@ -59,7 +59,7 @@ uint32_t LVGLDisplay::Update()
 {
 
 #if CONFIG_LVGL
-	return lv_task_handler();
+	return lv_timer_handler_run_in_period(150);
 #else
 	return 1000;
 #endif

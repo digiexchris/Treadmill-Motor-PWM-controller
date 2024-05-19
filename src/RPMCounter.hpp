@@ -18,8 +18,6 @@ private:
 	// const struct device *myPulseCounter;
 	struct gpio_dt_spec myPulseCounterSpec;
 
-	k_mutex myPulseCountMutex;
-
 	uint8_t myPulseCount = 0;
 
 	uint32_t myCurrentUptime = 0;
